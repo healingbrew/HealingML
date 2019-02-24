@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealingML", "HealingML\HealingML.csproj", "{C2EE7F09-AF66-4BF2-B2F2-570952A46342}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealingML.Unit", "HealingML.Unit\HealingML.Unit.csproj", "{02863BA6-8D24-4C04-BD6B-6F79668035DD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2EE7F09-AF66-4BF2-B2F2-570952A46342}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2EE7F09-AF66-4BF2-B2F2-570952A46342}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2EE7F09-AF66-4BF2-B2F2-570952A46342}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2EE7F09-AF66-4BF2-B2F2-570952A46342}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02863BA6-8D24-4C04-BD6B-6F79668035DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02863BA6-8D24-4C04-BD6B-6F79668035DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02863BA6-8D24-4C04-BD6B-6F79668035DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02863BA6-8D24-4C04-BD6B-6F79668035DD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
