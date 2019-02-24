@@ -25,6 +25,11 @@ namespace HealingML
                 customSerializer = customTypeSerializers[type];
                 target = customSerializer.OverrideTarget;
             }
+            else if (type != null && type.IsConstructedGenericType && customTypeSerializers.ContainsKey(type.GetGenericTypeDefinition()))
+            {
+                customSerializer = customTypeSerializers[type.GetGenericTypeDefinition()];
+                target = customSerializer.OverrideTarget;
+            }
             else
             {
                 target = GetSerializationTarget(type);
@@ -77,6 +82,11 @@ namespace HealingML
                                 targetCustomSerializer = customTypeSerializers[valueType];
                                 targetMemberTarget = targetCustomSerializer.OverrideTarget;
                             }
+                            else if (valueType != null && valueType.IsConstructedGenericType && customTypeSerializers.ContainsKey(valueType.GetGenericTypeDefinition()))
+                            {
+                                targetCustomSerializer = customTypeSerializers[valueType.GetGenericTypeDefinition()];
+                                targetMemberTarget = targetCustomSerializer.OverrideTarget;
+                            }
                             else
                             {
                                 targetMemberTarget = GetSerializationTarget(valueType);
@@ -96,7 +106,7 @@ namespace HealingML
                         {
                             tag += ">\n";
                             var innerIndent = indents + 1;
-                            foreach (var (value, name, custom) in complexMembers) tag += custom != null ? custom.Print(value, visited, indents, name) : Print(value, customTypeSerializers, visited, innerIndent, name);
+                            foreach (var (value, name, custom) in complexMembers) tag += custom != null ? custom.Print(value, visited, innerIndent, name) : Print(value, customTypeSerializers, visited, innerIndent, name);
 
                             tag += $"{indents}</{FormatName(type.Name)}>\n";
                         }
@@ -162,7 +172,7 @@ namespace HealingML
 
                 if (type.IsArray)
                     target = SerializationTarget.Array;
-                else if (type.IsValueType || type.IsEnum || type.IsPrimitive || type == typeof(string))
+                else if (type.IsEnum || type.IsPrimitive || type == typeof(string))
                     target = SerializationTarget.Value;
                 else
                     target = SerializationTarget.Object;
