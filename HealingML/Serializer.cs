@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace HealingML
 {
@@ -38,21 +39,21 @@ namespace HealingML
             var hmlNameTag = string.Empty;
             if (!string.IsNullOrWhiteSpace(valueName)) hmlNameTag = $" hml:name=\"{valueName}\"";
 
+            var innerIndent = indents + 1;
+            
             switch (target)
             {
                 case SerializationTarget.Null:
                     return $"{indents}<hml:null{hmlNameTag} />\n";
+                case SerializationTarget.Object when type != default && customSerializer != null:
+                case SerializationTarget.Array when type != default && customSerializer != null:
                 case SerializationTarget.Value when type != default:
-                    if (customSerializer == null) customSerializer = ToStringSerializer.Default;
-
-                    return $"{indents}<{FormatName(type.Name)}>{FormatTextValueType(customSerializer.Print(instance, visited, indents + 1, valueName))}</{FormatName(type.Name)}>\n";
+                    return customSerializer == null ? $"{indents}<{FormatName(type.Name)}>{FormatTextValueType(ToStringSerializer.Default.Print(instance, visited, innerIndent, valueName))}</{FormatName(type.Name)}>\n" : customSerializer.Print(instance, visited, innerIndent, valueName).ToString();
                 case SerializationTarget.Array when type != default:
                     if (visited.Add(instance))
                     {
                         var tag = $"{indents}<hml:array hml:id=\"{instance.GetHashCode()}\"{hmlNameTag}>\n";
-                        var array = instance as Array;
-                        var innerIndent = indents + 1;
-                        if (array == default)
+                        if (!(instance is Array array))
                             tag += $"{innerIndent}<hml:null />\n";
                         else
                             for (long i = 0; i < array.LongLength; ++i)
@@ -105,7 +106,6 @@ namespace HealingML
                         else
                         {
                             tag += ">\n";
-                            var innerIndent = indents + 1;
                             foreach (var (value, name, custom) in complexMembers) tag += custom != null ? custom.Print(value, visited, innerIndent, name) : Print(value, customTypeSerializers, visited, innerIndent, name);
 
                             tag += $"{indents}</{FormatName(type.Name)}>\n";
@@ -156,7 +156,7 @@ namespace HealingML
             // ReSharper disable once InvertIf
             if (!TypeCache.TryGetValue(type, out var members))
             {
-                members = type.GetFields().Cast<MemberInfo>().Concat(type.GetProperties()).ToArray();
+                members = type.GetFields().Cast<MemberInfo>().Concat(type.GetProperties()).Where(x => x.GetCustomAttribute<IgnoreDataMemberAttribute>() == null).ToArray();
                 TypeCache.Add(type, members);
             }
 
