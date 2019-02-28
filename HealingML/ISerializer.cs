@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace HealingML
@@ -7,7 +8,7 @@ namespace HealingML
         SerializationTarget OverrideTarget { get; }
 
         // ReSharper disable UnusedParameter.Global
-        object Print(object instance, HashSet<object> visited, IndentHelperBase indent, string fieldName);
+        object Print(object instance, IReadOnlyDictionary<Type, ISerializer> customTypeSerializers, HashSet<object> visited, IndentHelperBase indents, string valueName);
         // ReSharper restore UnusedParameter.Global
     }
 }

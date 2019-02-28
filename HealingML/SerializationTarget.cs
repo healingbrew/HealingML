@@ -5,8 +5,9 @@ namespace HealingML
         Null,
         Value,
         Array,
+        Enumerable,
         Object,
-
+        Dictionary,
         Complex = Array
     }
 }

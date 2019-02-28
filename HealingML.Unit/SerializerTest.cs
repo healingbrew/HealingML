@@ -6,27 +6,9 @@ using Xunit;
 
 namespace HealingML.Unit
 {
+    [Collection("Serializer")]
     public class SerializerTest
     {
-        public class ValueModel
-        {
-            public int IntType { get; set; }
-            public bool BoolType { get; set; }
-            public long LongType { get; set; }
-            public float FloatType { get; set; }
-            public string StringType { get; set; }
-        }
-
-        public class ArrayValueModel
-        {
-            public object[] Array { get; set; }
-        }
-
-        public class ObjectValueModel
-        {
-            public object Inner { get; set; }
-        }
-
         [Fact]
         public void ArrayValueSerializationTest()
         {
@@ -154,13 +136,32 @@ namespace HealingML.Unit
 
             Assert.Equal($"<ValueModel hml:id=\"{model.GetHashCode()}\" IntType=\"1\" BoolType=\"True\" LongType=\"1\" FloatType=\"0.53\" StringType=\"Hello World!\" />\n", hml);
         }
+
+        public class ValueModel
+        {
+            public int IntType { get; set; }
+            public bool BoolType { get; set; }
+            public long LongType { get; set; }
+            public float FloatType { get; set; }
+            public string StringType { get; set; }
+        }
+
+        public class ArrayValueModel
+        {
+            public object[] Array { get; set; }
+        }
+
+        public class ObjectValueModel
+        {
+            public object Inner { get; set; }
+        }
     }
 
     public class ByteStringSerializer : ISerializer
     {
         public SerializationTarget OverrideTarget => SerializationTarget.Value;
 
-        public object Print(object instance, HashSet<object> visited, IndentHelperBase indent, string name)
+        public object Print(object instance, IReadOnlyDictionary<Type, ISerializer> custom, HashSet<object> visited, IndentHelperBase indent, string name)
         {
             if (instance is string str) return BitConverter.ToString(Encoding.UTF8.GetBytes(str)).Replace("-", string.Empty);
 
