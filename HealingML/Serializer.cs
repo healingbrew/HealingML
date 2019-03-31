@@ -108,7 +108,7 @@ namespace HealingML
                                 if (args.Length > 1)
                                 {
                                     hmlKeyTag = $" hml:key=\"{args[0].Name}\"";
-                                    hmlValueTag = $" hml:value\"{args[1].Name}\"";
+                                    hmlValueTag = $" hml:value=\"{args[1].Name}\"";
                                     break;
                                 }
                             }
