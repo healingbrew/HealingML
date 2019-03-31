@@ -34,6 +34,7 @@ namespace HealingML
                     return $"{indents}<hml:null{hmlNameTag} />\n";
                 case SerializationTarget.Object when type != default && customSerializer != null:
                 case SerializationTarget.Array when type != default && customSerializer != null:
+                    return customSerializer.Print(instance, customTypeSerializers, visited, indents, valueName) as string;
                 case SerializationTarget.Value when type != default:
                     return $"{indents}<{FormatName(type.Name)}>{FormatTextValueType((customSerializer ?? ToStringSerializer.Default).Print(instance, customTypeSerializers, visited, innerIndent, valueName))}</{FormatName(type.Name)}>\n";
                 case SerializationTarget.Array when type != default:
