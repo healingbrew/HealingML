@@ -8,7 +8,7 @@ namespace HealingML
         SerializationTarget OverrideTarget { get; }
 
         // ReSharper disable UnusedParameter.Global
-        object Print(object instance, IReadOnlyDictionary<Type, ISerializer> customTypeSerializers, HashSet<object> visited, IndentHelperBase indents, string valueName);
+        object Print(object instance, IReadOnlyDictionary<Type, ISerializer> customTypeSerializers, Dictionary<object, int> visited, IndentHelperBase indents, string valueName, bool useRef);
         // ReSharper restore UnusedParameter.Global
     }
 }

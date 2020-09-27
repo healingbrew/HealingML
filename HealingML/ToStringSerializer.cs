@@ -9,7 +9,7 @@ namespace HealingML
 
         public SerializationTarget OverrideTarget => SerializationTarget.Value;
 
-        public object Print(object instance, IReadOnlyDictionary<Type, ISerializer> custom, HashSet<object> visited, IndentHelperBase indent, string name)
+        public object Print(object instance, IReadOnlyDictionary<Type, ISerializer> custom, Dictionary<object, int> visited, IndentHelperBase indent, string name, bool useRef)
         {
             return instance.ToString();
         }

@@ -12,12 +12,12 @@ namespace HealingML
         private static readonly Dictionary<Type, MemberInfo[]> TypeCache = new Dictionary<Type, MemberInfo[]>();
         private static readonly Dictionary<Type, SerializationTarget> TargetCache = new Dictionary<Type, SerializationTarget>();
 
-        public static string Print(object instance, IReadOnlyDictionary<Type, ISerializer> customTypeSerializers = null)
+        public static string Print(object instance, IReadOnlyDictionary<Type, ISerializer> customTypeSerializers = null, bool useRef = true)
         {
-            return Print(instance, customTypeSerializers ?? new Dictionary<Type, ISerializer>(), new HashSet<object>(), new SpaceIndentHelper(), null);
+            return Print(instance, customTypeSerializers ?? new Dictionary<Type, ISerializer>(), new Dictionary<object, int>(), new SpaceIndentHelper(), null, useRef);
         }
 
-        public static string Print(object instance, IReadOnlyDictionary<Type, ISerializer> customTypeSerializers, HashSet<object> visited, IndentHelperBase indents, string valueName)
+        public static string Print(object instance, IReadOnlyDictionary<Type, ISerializer> customTypeSerializers, Dictionary<object, int> visited, IndentHelperBase indents, string valueName, bool useRef)
         {
             var type = instance?.GetType();
             ISerializer customSerializer = null;
@@ -34,32 +34,51 @@ namespace HealingML
                     return $"{indents}<hml:null{hmlNameTag} />\n";
                 case SerializationTarget.Object when type != default && customSerializer != null:
                 case SerializationTarget.Array when type != default && customSerializer != null:
-                    return customSerializer.Print(instance, customTypeSerializers, visited, indents, valueName) as string;
+                    return customSerializer.Print(instance, customTypeSerializers, visited, indents, valueName, useRef) as string;
                 case SerializationTarget.Value when type != default:
-                    return $"{indents}<{FormatName(type.Name)}>{FormatTextValueType((customSerializer ?? ToStringSerializer.Default).Print(instance, customTypeSerializers, visited, innerIndent, valueName))}</{FormatName(type.Name)}>\n";
+                    return $"{indents}<{FormatName(type.Name)}>{FormatTextValueType((customSerializer ?? ToStringSerializer.Default).Print(instance, customTypeSerializers, visited, innerIndent, valueName, useRef))}</{FormatName(type.Name)}>\n";
                 case SerializationTarget.Array when type != default:
                 case SerializationTarget.Enumerable when type != default:
-                    if (visited.Add(instance))
+                    if (!visited.ContainsKey(instance)) 
                     {
-                        var tag = $"{indents}<hml:array hml:id=\"{instance.GetHashCode()}\"{hmlNameTag}>\n";
+                        visited[instance] = visited.Count;
+                        
+                        var hmlIdTag = string.Empty;
+                        if (useRef) {
+                            hmlIdTag = $" hml:id=\"{visited[instance]}\"";
+                        }
+                        
+                        var tag = $"{indents}<hml:array{hmlIdTag}{hmlNameTag}>\n";
                         if (target == SerializationTarget.Enumerable && instance is IEnumerable enumerable) instance = enumerable.Cast<object>().ToArray();
                         if (!(instance is Array array))
                             tag += $"{innerIndent}<hml:null />\n";
                         else
                             for (long i = 0; i < array.LongLength; ++i)
-                                tag += Print(array.GetValue(i), customTypeSerializers, visited, innerIndent, null);
+                                tag += Print(array.GetValue(i), customTypeSerializers, visited, innerIndent, null, useRef);
 
                         tag += $"{indents}</hml:array>\n";
                         return tag;
                     }
                     else
                     {
-                        return $"{indents}<hml:ref hml:id=\"{instance.GetHashCode()}\"{hmlNameTag} />\n";
+                        var hmlIdTag = string.Empty;
+                        if (useRef) {
+                            hmlIdTag = $" hml:id=\"{visited[instance]}\"";
+                        }
+                        
+                        return $"{indents}<hml:ref{hmlIdTag}{hmlNameTag}>\n";
                     }
                 case SerializationTarget.Object when type != default:
-                    if (visited.Add(instance))
+                    if (!visited.ContainsKey(instance))
                     {
-                        var tag = $"{indents}<{FormatName(type.Name)} hml:id=\"{instance.GetHashCode()}\"{hmlNameTag}";
+                        visited[instance] = visited.Count;
+                        
+                        var hmlIdTag = string.Empty;
+                        if (useRef) {
+                            hmlIdTag = $" hml:id=\"{visited[instance]}\"";
+                        }
+                        
+                        var tag = $"{indents}<{FormatName(type.Name)}{hmlIdTag}{hmlNameTag}";
                         var members = GetMembers(type);
                         var complexMembers = new List<(object value, string memberName, ISerializer custom)>();
                         foreach (var member in members)
@@ -72,7 +91,7 @@ namespace HealingML
                             if (targetMemberTarget >= SerializationTarget.Complex)
                                 complexMembers.Add((value, member.Name, targetCustomSerializer));
                             else
-                                tag += $" {member.Name}=\"{(targetCustomSerializer != null ? targetCustomSerializer.Print(value, customTypeSerializers, visited, indents, member.Name) : FormatValueType(value))}\"";
+                                tag += $" {member.Name}=\"{(targetCustomSerializer != null ? targetCustomSerializer.Print(value, customTypeSerializers, visited, indents, member.Name, useRef) : FormatValueType(value))}\"";
                         }
 
                         if (complexMembers.Count == 0)
@@ -82,7 +101,7 @@ namespace HealingML
                         else
                         {
                             tag += ">\n";
-                            foreach (var (value, name, custom) in complexMembers) tag += custom != null ? custom.Print(value, customTypeSerializers, visited, innerIndent, name) : Print(value, customTypeSerializers, visited, innerIndent, name);
+                            foreach (var (value, name, custom) in complexMembers) tag += custom != null ? custom.Print(value, customTypeSerializers, visited, innerIndent, name, useRef) : Print(value, customTypeSerializers, visited, innerIndent, name, useRef);
 
                             tag += $"{indents}</{FormatName(type.Name)}>\n";
                         }
@@ -91,13 +110,24 @@ namespace HealingML
                     }
                     else
                     {
-                        return $"{indents}<hml:ref hml:id=\"{instance.GetHashCode()}\"{hmlNameTag} />\n";
+                        var hmlIdTag = string.Empty;
+                        if (useRef) {
+                            hmlIdTag = $" hml:id=\"{visited[instance]}\"";
+                        }
+
+                        return $"{indents}<hml:ref{hmlIdTag}{hmlNameTag}>\n";
                     }
                 case SerializationTarget.Dictionary when type != default:
-                    if (visited.Add(instance))
+                    if (!visited.ContainsKey(instance))
                     {
+                        visited[instance] = visited.Count;
                         var hmlKeyTag = string.Empty;
                         var hmlValueTag = string.Empty;
+                        
+                        var hmlIdTag = string.Empty;
+                        if (useRef) {
+                            hmlIdTag = $" hml:id=\"{visited[instance]}\"";
+                        }
 
                         var @base = type;
                         while (@base != null)
@@ -116,7 +146,7 @@ namespace HealingML
                             @base = @base.BaseType;
                         }
 
-                        var tag = $"{indents}<hml:map hml:id=\"{instance.GetHashCode()}\"{hmlNameTag}{hmlKeyTag}{hmlValueTag}";
+                        var tag = $"{indents}<hml:map{hmlIdTag}{hmlNameTag}{hmlKeyTag}{hmlValueTag}";
 
                         if (!(instance is IDictionary dictionary)) return null;
 
@@ -155,9 +185,9 @@ namespace HealingML
 
                             if (keyTarget == SerializationTarget.Null)
                                 tag += " />";
-                            else if (keyTarget < SerializationTarget.Complex) tag += $" hml:key=\"{FormatTextValueType((customSerializer ?? ToStringSerializer.Default).Print(key, customTypeSerializers, visited, innerIndent, valueName))}\"";
+                            else if (keyTarget < SerializationTarget.Complex) tag += $" hml:key=\"{FormatTextValueType((customSerializer ?? ToStringSerializer.Default).Print(key, customTypeSerializers, visited, innerIndent, valueName, useRef))}\"";
 
-                            if (valueTarget != SerializationTarget.Null && valueTarget < SerializationTarget.Complex) tag += $" hml:value=\"{FormatTextValueType((customSerializer ?? ToStringSerializer.Default).Print(value, customTypeSerializers, visited, innerIndent, valueName))}\"";
+                            if (valueTarget != SerializationTarget.Null && valueTarget < SerializationTarget.Complex) tag += $" hml:value=\"{FormatTextValueType((customSerializer ?? ToStringSerializer.Default).Print(value, customTypeSerializers, visited, innerIndent, valueName, useRef))}\"";
 
                             if (valueTarget < SerializationTarget.Complex && keyTarget < SerializationTarget.Complex)
                             {
@@ -166,8 +196,8 @@ namespace HealingML
                             else
                             {
                                 tag += ">\n";
-                                if (keyTarget >= SerializationTarget.Complex) tag += Print(key, customTypeSerializers, visited, innerInnerIndent, "hml:key");
-                                if (valueTarget >= SerializationTarget.Complex) tag += Print(value, customTypeSerializers, visited, innerInnerIndent, "hml:value");
+                                if (keyTarget >= SerializationTarget.Complex) tag += Print(key, customTypeSerializers, visited, innerInnerIndent, "hml:key", useRef);
+                                if (valueTarget >= SerializationTarget.Complex) tag += Print(value, customTypeSerializers, visited, innerInnerIndent, "hml:value", useRef);
                                 if (valueTarget == SerializationTarget.Null)
                                     tag += $"{innerIndent}</hml:null>\n";
                                 else
@@ -181,7 +211,12 @@ namespace HealingML
                     }
                     else
                     {
-                        return $"{indents}<hml:ref hml:id=\"{instance.GetHashCode()}\"{hmlNameTag} />\n";
+                        var hmlIdTag = string.Empty;
+                        if (useRef) {
+                            hmlIdTag = $" hml:id=\"{visited[instance]}\"";
+                        }
+
+                        return $"{indents}<hml:ref{hmlIdTag}{hmlNameTag}>\n";
                     }
                 default:
                     throw new ArgumentOutOfRangeException();
